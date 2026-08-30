@@ -17,3 +17,5 @@ auth_qr.png
 *.log
 .DS_Store
 Thumbs.db
+# 本地参考材料（不入库）：竞赛指南、提交材料等
+_local/

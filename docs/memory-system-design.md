@@ -344,7 +344,7 @@ consolidate(chat_id):
 > 8-30 新增：① 写链路协议字段表化（judge 输出增加 `confidence`，commit 侧枚举白名单 + 数值截断防御，
 > 见 `references/write-protocol.md`）；② 两张记忆表增加「置信度」字段，经验类型补「其他」兜底；
 > ③ `scripts/memory-stats.sh` 记忆健康度统计；④ 「记忆健康度」仪表盘与「待确认」视图（搭建指南见
-> `skills/agent-memory/references/dashboard.md`）；⑤ 根目录 `prompts/` 与 skill 内 prompt 已同步为单一版本。
+> `skills/agent-memory/references/dashboard.md`）；⑤ Prompt 以 skill 内 `skills/agent-memory/prompts/` 为单一来源。
 > 待办：应用需在开发者后台开启 bot 权限 `im:message:readonly` 并发布版本，事件驱动的读链路才能用 bot 身份读群消息。
 
 ### Skill 包形态（多 agent 复用的交付物）
@@ -356,30 +356,25 @@ consolidate(chat_id):
 skills/agent-memory/            # 已安装到 ~/.agents/skills/agent-memory
 ├── SKILL.md                    # 法则：四层模型、读写时机、六条法则、降级表
 ├── references/
-│   ├── write-protocol.md       # 写链路完整协议（幂等可重入）
-│   └── token-budget.md         # 预算表
-├── prompts/                    # judge / refine / system / summary
-└── scripts/
-    ├── config.env              # 运行时配置（:= 默认值语义，环境变量可覆盖）
-    ├── _lib.sh                 # 共享库（python 块落盘 .py/，规避 heredoc 劫持 stdin）
-    ├── memory-recall.sh        # 读链路一键召回
-    ├── memory-judge.sh         # 写链路 prepare/commit
-    ├── memory-consolidate.sh   # cron 巡检
-    └── llm.sh.example          # OpenAI 兼容 LLM 接入模板
-```
-
-```
-lark-competiton/
-├── docs/memory-system-design.md   # 本文档（搭建说明）
-├── config/memory.yaml             # base_token、表ID、Token 预算、阈值参数
+│   ├── write-protocol.md       # 写链路完整协议（字段表 + 幂等可重入）
+│   ├── token-budget.md         # 预算表
+│   └── dashboard.md            # 仪表盘与「待确认」视图搭建指南
+├── prompts/                    # judge / refine / system / summary（可单独挂到 Coze/Dify）
 ├── scripts/
-│   ├── on_message.sh              # 读链路：event consume → recall → reply
-│   ├── consolidate.sh             # 写链路：巡检沉淀（cron 驱动）
-│   └── lib/                       # recall / refine / judge / base 封装
-└── prompts/                       # 4.2–4.5 四个 Prompt 的独立文件
+│   ├── config.env              # 运行时配置（:= 默认值语义，环境变量可覆盖）
+│   ├── config.env.local.example # 私有配置模板（真实值放 config.env.local，不入库）
+│   ├── _lib.sh                 # 共享库（python 块落盘 .py/，规避 heredoc 劫持 stdin）
+│   ├── memory-recall.sh        # 读链路一键召回
+│   ├── memory-judge.sh         # 写链路 prepare/commit
+│   ├── memory-stats.sh         # 记忆健康度统计（--json 供巡检/卡片）
+│   ├── memory-consolidate.sh   # cron 巡检
+│   ├── setup-observability.sh  # 待确认视图 + 仪表盘一键搭建（幂等）
+│   └── llm.sh.example          # OpenAI 兼容 LLM 接入模板
+└── tests/
+    └── e2e-test.sh             # 46 项端到端测试矩阵（真实 Base、自隔离自清理）
 ```
 
-复用三步：① 复制本 Base 模板（或按第 3 节建表）；② 机器人入群、开通 IM 事件与消息权限；③ 把 prompts/ 里的 Prompt 挂到任意 Agent（Coze/Dify/coding agent 均可）。
+复用三步：① 复制本 Base 模板（或按第 3 节建表）；② 机器人入群、开通 IM 事件与消息权限；③ 把 `skills/agent-memory/prompts/` 里的 Prompt 挂到任意 Agent（Coze/Dify/coding agent 均可）。
 
 ---
 

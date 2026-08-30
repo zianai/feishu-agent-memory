@@ -28,6 +28,43 @@
 - **多用户 / 多 Agent**：用户画像按用户共享（全体 agent 可读），任务经验按 Agent ID 隔离
 - **观测**：`memory-stats.sh` 健康度统计 +「记忆健康度」仪表盘一键搭建（幂等）
 
+## 架构
+
+```mermaid
+flowchart TB
+    user["👤 用户"]
+    im[("飞书会话<br/>= 短期记忆")]
+
+    user -- "@机器人 提问" --> im
+    im -- "im.message.receive_v1" --> recall["memory-recall.sh<br/>① 近期消息 ② 滚动摘要<br/>③ 画像/经验粗筛 Top30"]
+    recall -- "候选记忆" --> refine["LLM 精排（宁缺毋滥）"]
+    refine -- "相关记忆" --> answer["Token 预算装填 → Agent 回答"]
+    answer --> user
+
+    subgraph base["飞书多维表格 = 长期记忆（Shared Blackboard）"]
+        t1["用户画像表"]
+        t2["Agent 经验表"]
+        t3["会话状态表<br/>水位线 + 滚动摘要"]
+        view["待确认视图 + 健康度仪表盘"]
+    end
+
+    recall -- "读" --> base
+
+    cron["定时巡检<br/>静默 > 30 分钟"]
+    thr["未沉淀 ≥ 20 条"]
+    cron --> judge["memory-judge.sh<br/>judge → 协议校验 → 哈希查重<br/>先写新 → 后归档 → 推水位"]
+    thr --> judge
+    judge -- "写" --> base
+    t1 -- "置信度 < 0.6" --> view
+    t2 -- "置信度 < 0.6" --> view
+    user -- "改一行 = 完成纠错" --> base
+```
+
+上半部分是**读链路**（事件驱动，回答前召回）；下半部分是**写链路**（双触发器，静默后沉淀）；
+中间的飞书多维表格是人和 Agent 共同读写的黑板——低置信记忆进「待确认」视图，
+人在表格里改一行即完成纠错。逐节点说明见
+[docs/memory-system-design.md](docs/memory-system-design.md)。
+
 ## 快速开始
 
 前置：[飞书](https://www.feishu.cn/) 账号、[lark-cli](https://github.com/larksuite/lark-cli)（已登录、

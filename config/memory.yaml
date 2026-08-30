@@ -1,0 +1,36 @@
+# Agent 记忆系统 · 运行时配置模板
+# base_token / table_id 建表后回填（真实值放 skills/agent-memory/scripts/config.env.local，不入库）
+# Prompt 变量阈值与文章数值一致
+
+base:
+  base_token: "<你的base_token>"               # 建表后回填: https://my.feishu.cn/base/<base_token>
+  tables:
+    user_memory: "tblxxxxxxxxxxxxxxxx"         # 用户画像
+    agent_memory: "tblxxxxxxxxxxxxxxxx"        # Agent 经验
+    session_state: "tblxxxxxxxxxxxxxxxx"       # 会话状态
+
+agent:
+  id: "main"                        # MVP 单 Agent；多 Agent 时按 agent_id 分行
+  default_user_id: ""               # 调试用：固定用户 open_id
+
+budget:                             # 单位：token，数值沿用参考文章
+  memory_total: 4000                # 长期记忆总预算
+  user_ratio: 0.6                   # 用户画像占比上限
+  memory_clip_chars: 1000           # 单条记忆截断
+  summary_max_chars: 800            # 滚动摘要上限
+  short_term_messages: 20           # 短期窗口起始条数
+
+consolidation:                      # 写链路双触发器
+  idle_minutes: 30                  # 触发器A：最后消息距今超过 N 分钟
+  cron: "*/30 * * * *"
+  pending_threshold: 20             # 触发器B：未沉淀消息条数阈值
+
+observability:                      # 观测与人工治理
+  confirm_threshold: 0.6            # 置信度低于此值进「待确认」视图/仪表盘（同步 config.env）
+  dashboard: "记忆健康度"            # 搭建指南：skills/agent-memory/references/dashboard.md
+  stats_script: "scripts/memory-stats.sh"   # --json 可供卡片渲染/巡检告警
+
+llm:
+  # 由 Agent 侧模型承担（编码 Agent / Coze / Dify / 任意 LLM API）
+  refine_fallback_top_k: 10         # 精排失败时降级取粗筛前 K 条
+  coarse_top_k: 30                  # Base 粗筛候选上限

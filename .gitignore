@@ -1,0 +1,19 @@
+# 运行时产物
+skills/agent-memory/scripts/.work/
+skills/agent-memory/scripts/.py/
+skills/agent-memory/scripts/__pycache__/
+__pycache__/
+*.pyc
+
+# 私有配置（真实 base_token / 表ID，绝不入库）
+skills/agent-memory/scripts/config.env.local
+config/*.local.yaml
+
+# LLM 接入脚本（可能含密钥，仓库只保留 llm.sh.example 模板）
+skills/agent-memory/scripts/llm.sh
+
+# 登录二维码 / 临时文件 / 日志
+auth_qr.png
+*.log
+.DS_Store
+Thumbs.db

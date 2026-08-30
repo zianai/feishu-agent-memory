@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# LLM 接入模板（OpenAI 兼容接口）：stdin 读 prompt，stdout 出文本。
+# 用前复制为 llm.sh 并配置环境变量（勿把 key 写进本仓库）：
+#   export LLM_API_KEY="..."
+#   export LLM_BASE_URL="https://open.bigmodel.cn/api/paas/v4"   # 或任意 OpenAI 兼容端点
+#   export LLM_MODEL="glm-4.7"
+set -euo pipefail
+prompt="$(cat)"
+
+curl -sS "${LLM_BASE_URL:?需要 LLM_BASE_URL}/chat/completions" \
+  -H "Authorization: Bearer ${LLM_API_KEY:?需要 LLM_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d "$(python -c '
+import sys, json
+print(json.dumps({
+  "model": __import__("os").environ["LLM_MODEL"],
+  "messages": [{"role": "user", "content": sys.stdin.read()}],
+  "temperature": 0.2,
+}, ensure_ascii=False))
+' <<< "$prompt")" | python -c '
+import sys, json, re
+out = json.load(sys.stdin)
+text = out["choices"][0]["message"]["content"]
+# 防御性剥离 markdown 围栏，保证 judge 输出可直接 json.load
+text = re.sub(r"^```(json)?\s*|\s*```$", "", text.strip())
+print(text)
+'
